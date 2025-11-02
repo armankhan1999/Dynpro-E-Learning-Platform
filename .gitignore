@@ -1,0 +1,44 @@
+# Root level gitignore for DynPro Learning Portal
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded files
+uploads/
+media/
+
+# Docker volumes
+docker-data/
+postgres-data/
+redis-data/
+minio-data/
+
+# Backup files
+*.bak
+*.backup
