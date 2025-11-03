@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { MessageSquare, ThumbsUp, Reply } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 export default function DiscussionDetailPage({ params }: { params: { id: string } }) {
   const [replyText, setReplyText] = useState('')
   const [discussion, setDiscussion] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     fetchDiscussion()
@@ -21,6 +23,7 @@ export default function DiscussionDetailPage({ params }: { params: { id: string 
       setDiscussion(data)
     } catch (error) {
       console.error('Failed to fetch discussion:', error)
+      showToast.error('Failed to load discussion')
     } finally {
       setLoading(false)
     }
@@ -28,13 +31,24 @@ export default function DiscussionDetailPage({ params }: { params: { id: string 
 
   const handleReply = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!replyText.trim()) {
+      showToast.warning('Please enter a reply')
+      return
+    }
+
+    setSubmitting(true)
     try {
       const { discussionsApi } = await import('@/lib/api')
       await discussionsApi.reply(params.id, replyText)
       setReplyText('')
+      showToast.success('Reply posted successfully')
       fetchDiscussion() // Refresh
     } catch (error) {
       console.error('Failed to post reply:', error)
+      showToast.error('Failed to post reply')
+    } finally {
+      setSubmitting(false)
     }
   }
 

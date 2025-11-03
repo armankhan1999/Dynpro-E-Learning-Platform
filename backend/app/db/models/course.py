@@ -34,22 +34,28 @@ class Category(Base):
 
 class Course(Base):
     __tablename__ = "courses"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = Column(String(255), nullable=False)
-    slug = Column(String(255), unique=True, nullable=False)
+    slug = Column(String(255), unique=True)
     description = Column(Text)
     short_description = Column(String(500))
     thumbnail_url = Column(String(500))
+    intro_video_url = Column(String(500))
     instructor_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"))
+    category = Column(String(100))
     status = Column(Enum(CourseStatus), default=CourseStatus.draft)
     duration_hours = Column(Integer)
     difficulty_level = Column(String(20))
+    level = Column(String(20), default='beginner')
+    language = Column(String(50), default='English')
     prerequisites = Column(ARRAY(Text))
     learning_objectives = Column(ARRAY(Text))
     tags = Column(ARRAY(Text))
     is_featured = Column(Boolean, default=False)
+    is_published = Column(Boolean, default=False)
+    max_students = Column(Integer)
     enrollment_limit = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

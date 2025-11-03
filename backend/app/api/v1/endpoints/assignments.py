@@ -204,20 +204,46 @@ def submit_assignment(
     return submission
 
 
-@router.get("/{assignment_id}/submissions", response_model=List[AssignmentSubmissionResponse])
+@router.get("/{assignment_id}/submissions")
 def get_assignment_submissions(
     assignment_id: UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Get all submissions for an assignment (instructor/admin only)."""
+    from sqlalchemy.orm import joinedload
+
     result = db.execute(
-        select(AssignmentSubmission).where(
+        select(AssignmentSubmission, User).join(
+            User, AssignmentSubmission.user_id == User.id
+        ).where(
             AssignmentSubmission.assignment_id == assignment_id
         ).order_by(AssignmentSubmission.submitted_at.desc())
     )
-    submissions = result.scalars().all()
-    return submissions
+
+    submissions_data = []
+    for submission, user in result.all():
+        submission_dict = {
+            "id": str(submission.id),
+            "assignment_id": str(submission.assignment_id),
+            "user_id": str(submission.user_id),
+            "student_id": str(submission.user_id),
+            "student_name": f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.email,
+            "student_email": user.email,
+            "submission_text": submission.submission_text,
+            "attachment_urls": submission.attachment_urls or [],
+            "attachment_url": submission.attachment_urls[0] if submission.attachment_urls else None,
+            "grade": submission.score,
+            "score": submission.score,
+            "feedback": submission.feedback,
+            "graded_by": str(submission.graded_by) if submission.graded_by else None,
+            "submitted_at": submission.submitted_at.isoformat(),
+            "graded_at": submission.graded_at.isoformat() if submission.graded_at else None,
+            "status": "graded" if submission.graded_at else "submitted"
+        }
+        submissions_data.append(submission_dict)
+
+    return {"submissions": submissions_data}
 
 
 @router.get("/{assignment_id}/submissions/{submission_id}", response_model=AssignmentSubmissionResponse)

@@ -6,16 +6,20 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
 import ContentLoader from '@/components/ui/content-loader'
 import { Award, Download, Share2, ExternalLink, Calendar, CheckCircle } from 'lucide-react'
+import { showToast } from '@/lib/toast'
+import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 
 interface Certificate {
   id: string
-  course_title: string
+  title: string
   certificate_number: string
   verification_code: string
   issued_at: string
   expires_at?: string
   certificate_url?: string
   is_revoked: boolean
+  course_id: string
+  user_id: string
 }
 
 export default function CertificatesPage() {
@@ -31,30 +35,69 @@ export default function CertificatesPage() {
     try {
       const { certificatesApi } = await import('@/lib/api')
       const data = await certificatesApi.getMyCertificates()
-      setCertificates(data.certificates || [])
+      // API returns array directly
+      setCertificates(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Failed to fetch certificates:', error)
+      showToast.error('Failed to load certificates')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDownload = (cert: Certificate) => {
-    console.log('Downloading certificate:', cert.id)
-    // Implement download logic
+  const handleDownload = async (cert: Certificate) => {
+    try {
+      if (cert.certificate_url) {
+        // Download the certificate
+        const link = document.createElement('a')
+        link.href = cert.certificate_url
+        link.download = `certificate-${cert.certificate_number}.pdf`
+        link.click()
+        showToast.success('Certificate downloaded')
+      } else {
+        showToast.warning('Certificate URL not available')
+      }
+    } catch (error) {
+      console.error('Failed to download certificate:', error)
+      showToast.error('Failed to download certificate')
+    }
   }
 
-  const handleShare = (cert: Certificate) => {
-    console.log('Sharing certificate:', cert.id)
-    // Implement share logic
+  const handleShare = async (cert: Certificate) => {
+    try {
+      const shareUrl = `${window.location.origin}/verify-certificate/${cert.verification_code}`
+
+      if (navigator.share) {
+        await navigator.share({
+          title: `Certificate: ${cert.title}`,
+          text: `Check out my certificate for ${cert.title}`,
+          url: shareUrl
+        })
+        showToast.success('Certificate shared')
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(shareUrl)
+        showToast.success('Certificate link copied to clipboard')
+      }
+    } catch (error) {
+      console.error('Failed to share certificate:', error)
+      showToast.error('Failed to share certificate')
+    }
   }
 
   if (loading) {
-    return <ContentLoader />
+    return (
+      <ModernDashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <ContentLoader />
+        </div>
+      </ModernDashboardLayout>
+    )
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <ModernDashboardLayout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
@@ -118,7 +161,7 @@ export default function CertificatesPage() {
                     Certificate of Completion
                   </h3>
                   <p className="text-center text-gray-600 font-medium">
-                    {cert.course_title}
+                    {cert.title}
                   </p>
                 </div>
 
@@ -195,6 +238,7 @@ export default function CertificatesPage() {
             </Link>
           </div>
         )}
-    </div>
+      </div>
+    </ModernDashboardLayout>
   )
 }

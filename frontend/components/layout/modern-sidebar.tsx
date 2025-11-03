@@ -42,6 +42,11 @@ const navigation: NavItem[] = [
   { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
 ]
 
+const instructorNavigation: NavItem[] = [
+  { name: 'My Courses', href: '/instructor/courses', icon: BookOpen, roles: ['instructor', 'admin', 'super_admin'] },
+  { name: 'Create Course', href: '/courses/create', icon: FileText, roles: ['instructor', 'admin', 'super_admin'] },
+]
+
 const managerNavigation: NavItem[] = [
   { name: 'Manager Dashboard', href: '/manager', icon: BarChart3, roles: ['manager', 'admin', 'super_admin'] },
   { name: 'Team Progress', href: '/manager/team-progress', icon: Users, roles: ['manager', 'admin', 'super_admin'] },
@@ -50,7 +55,7 @@ const managerNavigation: NavItem[] = [
 
 const adminNavigation: NavItem[] = [
   { name: 'Admin Dashboard', href: '/admin', icon: BarChart3, roles: ['admin', 'super_admin'] },
-  { name: 'Manage Courses', href: '/admin/courses', icon: FileText, roles: ['admin', 'super_admin', 'instructor'] },
+  { name: 'Manage Courses', href: '/admin/courses', icon: FileText, roles: ['admin', 'super_admin'] },
   { name: 'Manage Users', href: '/admin/users', icon: Users, roles: ['admin', 'super_admin'] },
   { name: 'Reports', href: '/admin/reports', icon: BarChart3, roles: ['admin', 'super_admin'] },
   { name: 'Settings', href: '/admin/settings', icon: Settings, roles: ['admin', 'super_admin'] },
@@ -67,6 +72,7 @@ export default function ModernSidebar() {
     return item.roles.includes(user?.role || '')
   }
 
+  const filteredInstructorNav = instructorNavigation.filter(canAccessItem)
   const filteredManagerNav = managerNavigation.filter(canAccessItem)
   const filteredAdminNav = adminNavigation.filter(canAccessItem)
 
@@ -118,6 +124,41 @@ export default function ModernSidebar() {
             )
           })}
         </div>
+
+        {/* Instructor Navigation */}
+        {filteredInstructorNav.length > 0 && (
+          <>
+            <div className="pt-6 pb-2">
+              {!collapsed && (
+                <h3 className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Teaching
+                </h3>
+              )}
+              {collapsed && <div className="border-t border-slate-700 my-2"></div>}
+            </div>
+            <div className="space-y-1">
+              {filteredInstructorNav.map((item) => {
+                const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 group ${
+                      isActive
+                        ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/50'
+                        : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                    }`}
+                    title={collapsed ? item.name : ''}
+                  >
+                    <Icon className={`${collapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}`} />
+                    {!collapsed && <span>{item.name}</span>}
+                  </Link>
+                )
+              })}
+            </div>
+          </>
+        )}
 
         {/* Manager Navigation */}
         {filteredManagerNav.length > 0 && (

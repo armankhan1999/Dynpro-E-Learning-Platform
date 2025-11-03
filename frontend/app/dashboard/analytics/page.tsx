@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import ContentLoader from '@/components/ui/content-loader'
 import { BarChart3, TrendingUp, Clock, Award, Target, Calendar } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 export default function AnalyticsPage() {
   const { user } = useAuth()
@@ -22,6 +23,7 @@ export default function AnalyticsPage() {
       setAnalytics(data)
     } catch (error) {
       console.error('Failed to fetch analytics:', error)
+      showToast.error('Failed to load analytics')
     } finally {
       setLoading(false)
     }

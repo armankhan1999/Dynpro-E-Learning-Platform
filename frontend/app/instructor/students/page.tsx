@@ -3,10 +3,13 @@
 import { useState, useEffect } from 'react'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { Users, Search } from 'lucide-react'
+import { showToast } from '@/lib/toast'
+import { TableSkeleton } from '@/components/ui/content-loader'
 
 export default function InstructorStudentsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [students, setStudents] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchStudents()
@@ -19,6 +22,9 @@ export default function InstructorStudentsPage() {
       setStudents(data.users || [])
     } catch (error) {
       console.error('Failed to fetch students:', error)
+      showToast.error('Failed to load students')
+    } finally {
+      setLoading(false)
     }
   }
 

@@ -5,20 +5,32 @@ import { useRouter } from 'next/navigation'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { Upload, FileText, Send } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 export default function SubmitAssignmentPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [submission, setSubmission] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!submission.trim()) {
+      showToast.warning('Please provide your submission')
+      return
+    }
+
+    setSubmitting(true)
     try {
       const { assignmentsApi } = await import('@/lib/api')
       await assignmentsApi.submit(params.id, { submission, file })
+      showToast.success('Assignment submitted successfully')
       router.push('/dashboard/my-learning')
     } catch (error) {
       console.error('Failed to submit assignment:', error)
+      showToast.error('Failed to submit assignment')
+      setSubmitting(false)
     }
   }
 
@@ -73,9 +85,9 @@ export default function SubmitAssignmentPage({ params }: { params: { id: string 
               </div>
             </div>
 
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" disabled={submitting} className="w-full bg-blue-600 hover:bg-blue-700">
               <Send className="mr-2 h-4 w-4" />
-              Submit Assignment
+              {submitting ? 'Submitting...' : 'Submit Assignment'}
             </Button>
           </div>
         </form>

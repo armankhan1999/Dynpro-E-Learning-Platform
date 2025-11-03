@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { ButtonLoader } from '@/components/ui/content-loader'
 import { useAuth } from '@/lib/auth-context'
+import { showToast, toastMessages } from '@/lib/toast'
+import { Star, Share2 } from 'lucide-react'
 
 interface Module {
   id: string
@@ -22,7 +25,11 @@ interface Course {
   duration_hours: number
   difficulty_level: string
   enrollments_count: number
+  rating?: number
+  reviews_count?: number
   modules: Module[]
+  learning_objectives?: string[]
+  prerequisites?: string[]
 }
 
 export default function CourseDetailPage() {
@@ -30,42 +37,131 @@ export default function CourseDetailPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [course, setCourse] = useState<Course | null>(null)
+  const [modules, setModules] = useState<Module[]>([])
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
   const [isEnrolled, setIsEnrolled] = useState(false)
+  const [userRating, setUserRating] = useState(0)
+  const [hoveredRating, setHoveredRating] = useState(0)
 
   useEffect(() => {
     fetchCourseDetails()
-  }, [params.id])
+    if (user) {
+      checkEnrollmentStatus()
+    }
+  }, [params.id, user])
 
   const fetchCourseDetails = async () => {
     try {
+      setLoading(true)
       const { coursesApi } = await import('@/lib/api')
       const data = await coursesApi.getById(params.id as string)
       setCourse(data)
+
+      // Fetch modules separately
+      try {
+        const modulesData = await coursesApi.getModules(params.id as string)
+        if (modulesData && modulesData.modules) {
+          setModules(modulesData.modules)
+        }
+      } catch (moduleError) {
+        console.error('Failed to fetch modules:', moduleError)
+        setModules([])
+      }
     } catch (error) {
       console.error('Failed to fetch course:', error)
+      showToast.error(toastMessages.loadError('course details'))
     } finally {
       setLoading(false)
     }
   }
 
+  const checkEnrollmentStatus = async () => {
+    try {
+      const { enrollmentsApi } = await import('@/lib/api')
+      const enrollments = await enrollmentsApi.getMyEnrollments()
+      const enrolled = enrollments.some((e: any) => e.course_id === params.id)
+      setIsEnrolled(enrolled)
+    } catch (error) {
+      console.error('Failed to check enrollment:', error)
+    }
+  }
+
+
   const handleEnroll = async () => {
     if (!user) {
+      showToast.info('Please login to enroll in courses')
       router.push('/login')
       return
     }
 
     setEnrolling(true)
     try {
-      // In production, call enrollment API
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const { enrollmentsApi } = await import('@/lib/api')
+      await enrollmentsApi.create({ course_id: params.id })
       setIsEnrolled(true)
-    } catch (error) {
+      showToast.success(toastMessages.enrolled)
+      // Refresh course data to update enrollment count
+      fetchCourseDetails()
+    } catch (error: any) {
       console.error('Enrollment failed:', error)
+      const message = error.response?.data?.detail || 'Failed to enroll in course'
+      showToast.error(message)
     } finally {
       setEnrolling(false)
     }
+  }
+
+
+  const handleRating = async (rating: number) => {
+    if (!user) {
+      showToast.info('Please login to rate courses')
+      router.push('/login')
+      return
+    }
+
+    if (!isEnrolled) {
+      showToast.warning('Please enroll in the course before rating')
+      return
+    }
+
+    try {
+      const { ratingsApi } = await import('@/lib/api')
+      await ratingsApi.rateCourse(params.id as string, rating)
+      setUserRating(rating)
+      showToast.success('Rating submitted successfully')
+      // Refresh course to update average rating
+      fetchCourseDetails()
+    } catch (error) {
+      console.error('Rating failed:', error)
+      showToast.error('Failed to submit rating')
+    }
+  }
+
+  const handleShare = async () => {
+    const shareData = {
+      title: course?.title || 'Check out this course',
+      text: course?.description || '',
+      url: window.location.href
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+        showToast.success('Course shared successfully')
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          copyToClipboard()
+        }
+      }
+    } else {
+      copyToClipboard()
+    }
+  }
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(window.location.href)
+    showToast.success('Course link copied to clipboard')
   }
 
   if (loading) {
@@ -134,7 +230,7 @@ export default function CourseDetailPage() {
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  {course.enrollments_count} students
+                  {course.enrollments_count} employees
                 </div>
               </div>
             </div>
@@ -142,28 +238,101 @@ export default function CourseDetailPage() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg shadow-lg p-6 text-gray-900">
                 <h3 className="text-2xl font-bold mb-4">Enroll Now</h3>
+
+                {/* Course Rating */}
+                {course.rating && (
+                  <div className="mb-4 flex items-center">
+                    <div className="flex items-center">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`h-5 w-5 ${
+                            star <= (course.rating || 0)
+                              ? 'text-yellow-400 fill-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="ml-2 text-sm text-gray-600">
+                      {course.rating?.toFixed(1)} ({course.reviews_count || 0} reviews)
+                    </span>
+                  </div>
+                )}
+
                 {isEnrolled ? (
                   <div>
                     <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4">
                       ✓ You are enrolled in this course
                     </div>
-                    <Button className="w-full" onClick={() => router.push(`/courses/${course.id}/learn`)}>
+                    <Button className="w-full mb-3" onClick={() => router.push(`/courses/${course.id}/learn`)}>
                       Continue Learning
                     </Button>
+
+                    {/* Rate this course */}
+                    <div className="border-t pt-4 mt-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Rate this course:</p>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => handleRating(star)}
+                            onMouseEnter={() => setHoveredRating(star)}
+                            onMouseLeave={() => setHoveredRating(0)}
+                            className="focus:outline-none"
+                          >
+                            <Star
+                              className={`h-6 w-6 cursor-pointer transition-colors ${
+                                star <= (hoveredRating || userRating)
+                                  ? 'text-yellow-400 fill-yellow-400'
+                                  : 'text-gray-300 hover:text-yellow-200'
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  <Button 
-                    className="w-full" 
+                  <Button
+                    className="w-full"
                     onClick={handleEnroll}
                     disabled={enrolling}
                   >
-                    {enrolling ? 'Enrolling...' : 'Enroll in Course'}
+                    {enrolling ? (
+                      <span className="flex items-center justify-center">
+                        <ButtonLoader className="mr-2" />
+                        Enrolling...
+                      </span>
+                    ) : (
+                      'Enroll in Course'
+                    )}
                   </Button>
                 )}
-                <div className="mt-4 text-sm text-gray-600">
-                  <p>✓ Lifetime access</p>
-                  <p>✓ Certificate of completion</p>
-                  <p>✓ Mobile and desktop access</p>
+
+                {/* Action Buttons */}
+                <div className="mt-4 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share Course
+                  </Button>
+                </div>
+
+                <div className="mt-4 text-sm text-gray-600 space-y-1">
+                  <p className="flex items-center">
+                    <span className="text-green-600 mr-2">✓</span> Lifetime access
+                  </p>
+                  <p className="flex items-center">
+                    <span className="text-green-600 mr-2">✓</span> Certificate of completion
+                  </p>
+                  <p className="flex items-center">
+                    <span className="text-green-600 mr-2">✓</span> Mobile and desktop access
+                  </p>
                 </div>
               </div>
             </div>
@@ -176,50 +345,40 @@ export default function CourseDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">What you'll learn</h2>
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Python fundamentals and syntax</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Data structures and algorithms</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Object-oriented programming</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>File handling and exceptions</span>
-                </li>
-              </ul>
-            </div>
+            {course.learning_objectives && course.learning_objectives.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-6 mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">What you'll learn</h2>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {course.learning_objectives.map((objective: string, index: number) => (
+                    <li key={index} className="flex items-start">
+                      <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>{objective}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Course Content</h2>
               <div className="space-y-4">
-                {course.modules.map((module) => (
-                  <div key={module.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-gray-900">{module.title}</h3>
-                        <p className="text-gray-600 text-sm mt-1">{module.description}</p>
+                {modules && modules.length > 0 ? (
+                  modules.map((module) => (
+                    <div key={module.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg text-gray-900">{module.title}</h3>
+                          <p className="text-gray-600 text-sm mt-1">{module.description}</p>
+                        </div>
+                        <span className="text-sm text-gray-500 ml-4">{module.content_count || 0} lessons</span>
                       </div>
-                      <span className="text-sm text-gray-500 ml-4">{module.content_count} lessons</span>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-8">No modules available yet</p>
+                )}
               </div>
             </div>
           </div>
@@ -256,14 +415,16 @@ export default function CourseDetailPage() {
               </ul>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="font-bold text-lg mb-4">Requirements</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>• No prior programming experience required</li>
-                <li>• A computer with internet access</li>
-                <li>• Willingness to learn and practice</li>
-              </ul>
-            </div>
+            {course.prerequisites && course.prerequisites.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="font-bold text-lg mb-4">Requirements</h3>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  {course.prerequisites.map((prereq: string, index: number) => (
+                    <li key={index}>• {prereq}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </main>

@@ -34,5 +34,21 @@ export const assignmentsApi = {
       headers: getAuthHeader()
     });
     return response.data;
+  },
+
+  getSubmissions: async (assignmentId: string) => {
+    const response = await axios.get(`${API_URL}/assignments/${assignmentId}/submissions`, {
+      headers: getAuthHeader()
+    });
+    return response.data;
+  },
+
+  gradeSubmission: async (assignmentId: string, submissionId: string, data: { grade: number, feedback: string }) => {
+    const response = await axios.post(
+      `${API_URL}/assignments/${assignmentId}/submissions/${submissionId}/grade`,
+      { score: data.grade, feedback: data.feedback },
+      { headers: getAuthHeader() }
+    );
+    return response.data;
   }
 };

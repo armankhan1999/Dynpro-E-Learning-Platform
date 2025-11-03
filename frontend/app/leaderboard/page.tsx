@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import ContentLoader from '@/components/ui/content-loader'
 import { Trophy, Medal, Award, TrendingUp, Users } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 interface LeaderboardEntry {
   rank: number
@@ -37,6 +38,7 @@ export default function LeaderboardPage() {
       setLeaderboard(data.leaderboard || [])
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error)
+      showToast.error('Failed to load leaderboard')
     } finally {
       setLoading(false)
     }

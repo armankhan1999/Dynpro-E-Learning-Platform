@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { BarChart3, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { showToast } from '@/lib/toast'
 
 export default function InstructorReportsPage() {
   const [reports, setReports] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchReports()
@@ -19,6 +21,9 @@ export default function InstructorReportsPage() {
       setReports(data)
     } catch (error) {
       console.error('Failed to fetch reports:', error)
+      showToast.error('Failed to load reports')
+    } finally {
+      setLoading(false)
     }
   }
 

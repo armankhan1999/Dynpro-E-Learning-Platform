@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { BookOpen, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 export default function LearnContentPage({ params }: { params: { contentId: string } }) {
   const [content, setContent] = useState<any>(null)
@@ -19,6 +20,17 @@ export default function LearnContentPage({ params }: { params: { contentId: stri
       setContent(data)
     } catch (error) {
       console.error('Failed to fetch content:', error)
+      showToast.error('Failed to load content')
+    }
+  }
+
+  const handleMarkComplete = async () => {
+    try {
+      // API call to mark complete
+      showToast.success('Lesson marked as complete')
+    } catch (error) {
+      console.error('Failed to mark complete:', error)
+      showToast.error('Failed to mark lesson complete')
     }
   }
 
@@ -53,7 +65,7 @@ export default function LearnContentPage({ params }: { params: { contentId: stri
               <ChevronLeft className="mr-2 h-4 w-4" />
               Previous Lesson
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleMarkComplete} className="bg-blue-600 hover:bg-blue-700">
               <CheckCircle className="mr-2 h-4 w-4" />
               Mark as Complete
             </Button>

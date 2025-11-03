@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(for file in learning_paths.py files.py search.py admin.py reports.py gamification.py ratings.py live_sessions.py scorm.py)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(done)",
+      "Bash(python:*)",
+      "Bash(audit_output.txt)",
+      "Bash(cat:*)",
+      "Bash(findstr:*)",
+      "Bash(if not exist \"C:\\Users\\Arman\\Desktop\\Dynpro Elearning\\frontend\\app\\courses\\[id]\\edit\" mkdir \"C:\\Users\\Arman\\Desktop\\Dynpro Elearning\\frontend\\app\\courses\\[id]\\edit\")",
+      "Bash(\"C:\\Users\\Arman\\Desktop\\Dynpro Elearning\\frontend\\app\\courses\\[id]\\edit\\page.tsx\")",
+      "Bash(dir /s /b \"C:\\Users\\Arman\\Desktop\\Dynpro Elearning\\frontend\\app\\courses\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

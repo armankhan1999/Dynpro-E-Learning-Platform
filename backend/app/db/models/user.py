@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Boolean, DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 import uuid
 from datetime import datetime
@@ -33,3 +34,6 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted_at = Column(DateTime)
+
+    # Relationships
+    notes = relationship("Note", back_populates="user", cascade="all, delete-orphan")

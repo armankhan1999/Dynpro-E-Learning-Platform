@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { MessageSquare, MessageCircle, Eye } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 export default function MyPostsPage() {
   const [posts, setPosts] = useState([])
@@ -20,6 +21,7 @@ export default function MyPostsPage() {
       setPosts(data.discussions || [])
     } catch (error) {
       console.error('Failed to fetch posts:', error)
+      showToast.error('Failed to load your posts')
     } finally {
       setLoading(false)
     }

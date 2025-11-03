@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, Boolean, DateTime, ForeignKey, Numeric
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 import uuid
 from datetime import datetime
@@ -16,7 +17,7 @@ class EnrollmentStatus(str, enum.Enum):
 
 class Enrollment(Base):
     __tablename__ = "enrollments"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id"))
@@ -27,6 +28,9 @@ class Enrollment(Base):
     completed_at = Column(DateTime)
     last_accessed_at = Column(DateTime)
     certificate_issued = Column(Boolean, default=False)
+
+    # Relationships
+    notes = relationship("Note", back_populates="enrollment", cascade="all, delete-orphan")
 
 
 class ContentProgress(Base):

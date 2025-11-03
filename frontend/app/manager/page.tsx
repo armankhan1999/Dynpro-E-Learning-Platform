@@ -20,16 +20,18 @@ export default function ManagerDashboardPage() {
   const fetchManagerData = async () => {
     try {
       const { reportsApi, analyticsApi } = await import('@/lib/api')
-      
+
       // Fetch team statistics
       const departmentStats = await reportsApi.getDepartmentProgress()
       setStats(departmentStats)
-      
+
       // Fetch team member progress
       const teamData = await analyticsApi.getTeamAnalytics()
       setTeamProgress(teamData.team_members || [])
     } catch (error) {
       console.error('Failed to fetch manager data:', error)
+      const { showToast } = await import('@/lib/toast')
+      showToast.error('Failed to load manager dashboard')
     } finally {
       setLoading(false)
     }
@@ -39,8 +41,12 @@ export default function ManagerDashboardPage() {
     try {
       const { reportsApi } = await import('@/lib/api')
       await reportsApi.exportReport('team-progress', 'csv')
+      const { showToast } = await import('@/lib/toast')
+      showToast.success('Report exported successfully')
     } catch (error) {
       console.error('Failed to export report:', error)
+      const { showToast } = await import('@/lib/toast')
+      showToast.error('Failed to export report')
     }
   }
 

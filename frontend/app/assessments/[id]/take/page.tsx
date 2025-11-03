@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { Clock, CheckCircle } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 export default function TakeAssessmentPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -13,6 +14,7 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
   const [assessment, setAssessment] = useState<any>(null)
   const [questions, setQuestions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     fetchAssessment()
@@ -26,18 +28,25 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
       setQuestions(data.questions || [])
     } catch (error) {
       console.error('Failed to fetch assessment:', error)
+      showToast.error('Failed to load assessment')
     } finally {
       setLoading(false)
     }
   }
 
   const handleSubmit = async () => {
+    if (submitting) return
+
+    setSubmitting(true)
     try {
       const { assessmentsApi } = await import('@/lib/api')
       await assessmentsApi.submit(params.id, answers)
+      showToast.success('Assessment submitted successfully')
       router.push('/dashboard/my-learning')
     } catch (error) {
       console.error('Failed to submit assessment:', error)
+      showToast.error('Failed to submit assessment')
+      setSubmitting(false)
     }
   }
 
@@ -122,9 +131,9 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
                 Next
               </Button>
             ) : (
-              <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={handleSubmit} disabled={submitting} className="bg-green-600 hover:bg-green-700">
                 <CheckCircle className="mr-2 h-4 w-4" />
-                Submit
+                {submitting ? 'Submitting...' : 'Submit'}
               </Button>
             )}
           </div>

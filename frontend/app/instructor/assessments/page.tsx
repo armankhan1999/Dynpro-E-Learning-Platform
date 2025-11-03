@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { ClipboardList, Plus, Edit, Trash2 } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 export default function InstructorAssessmentsPage() {
   const [assessments, setAssessments] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchAssessments()
@@ -19,6 +21,9 @@ export default function InstructorAssessmentsPage() {
       setAssessments(data.assessments || [])
     } catch (error) {
       console.error('Failed to fetch assessments:', error)
+      showToast.error('Failed to load assessments')
+    } finally {
+      setLoading(false)
     }
   }
 

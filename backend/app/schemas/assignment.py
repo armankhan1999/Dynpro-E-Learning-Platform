@@ -58,13 +58,19 @@ class AssignmentSubmissionResponse(BaseModel):
     id: UUID
     assignment_id: UUID
     user_id: UUID
+    student_id: UUID
+    student_name: Optional[str] = None
+    student_email: Optional[str] = None
     submission_text: Optional[str] = None
     attachment_urls: Optional[List[str]] = []
+    attachment_url: Optional[str] = None  # For compatibility with frontend
+    grade: Optional[Decimal] = None
     score: Optional[Decimal] = None
     feedback: Optional[str] = None
     graded_by: Optional[UUID] = None
     submitted_at: datetime
     graded_at: Optional[datetime] = None
-    
+    status: Optional[str] = 'submitted'
+
     class Config:
         from_attributes = True

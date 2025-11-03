@@ -8,8 +8,16 @@ const getAuthHeader = () => {
 };
 
 export const coursesApi = {
-  getAll: async (skip = 0, limit = 20) => {
+  getAll: async (skip = 0, limit = 20, filters?: { status?: string }) => {
     const response = await axios.get(`${API_URL}/courses`, {
+      params: { skip, limit, ...filters },
+      headers: getAuthHeader()
+    });
+    return response.data;
+  },
+
+  getMyCourses: async (skip = 0, limit = 20) => {
+    const response = await axios.get(`${API_URL}/courses/my-courses`, {
       params: { skip, limit },
       headers: getAuthHeader()
     });
@@ -54,6 +62,48 @@ export const coursesApi = {
 
   getModules: async (courseId: string) => {
     const response = await axios.get(`${API_URL}/courses/${courseId}/modules`, {
+      headers: getAuthHeader()
+    });
+    return response.data;
+  },
+
+  createModule: async (courseId: string, data: any) => {
+    const response = await axios.post(`${API_URL}/courses/${courseId}/modules`, data, {
+      headers: getAuthHeader()
+    });
+    return response.data;
+  },
+
+  updateModule: async (courseId: string, moduleId: string, data: any) => {
+    const response = await axios.put(`${API_URL}/courses/${courseId}/modules/${moduleId}`, data, {
+      headers: getAuthHeader()
+    });
+    return response.data;
+  },
+
+  deleteModule: async (courseId: string, moduleId: string) => {
+    const response = await axios.delete(`${API_URL}/courses/${courseId}/modules/${moduleId}`, {
+      headers: getAuthHeader()
+    });
+    return response.data;
+  },
+
+  addContentItem: async (courseId: string, moduleId: string, data: any) => {
+    const response = await axios.post(`${API_URL}/courses/${courseId}/modules/${moduleId}/content`, data, {
+      headers: getAuthHeader()
+    });
+    return response.data;
+  },
+
+  updateContentItem: async (courseId: string, moduleId: string, contentId: string, data: any) => {
+    const response = await axios.put(`${API_URL}/courses/${courseId}/modules/${moduleId}/content/${contentId}`, data, {
+      headers: getAuthHeader()
+    });
+    return response.data;
+  },
+
+  deleteContentItem: async (courseId: string, moduleId: string, contentId: string) => {
+    const response = await axios.delete(`${API_URL}/courses/${courseId}/modules/${moduleId}/content/${contentId}`, {
       headers: getAuthHeader()
     });
     return response.data;

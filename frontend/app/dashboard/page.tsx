@@ -5,8 +5,26 @@ import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { progressApi, certificatesApi } from '@/lib/api'
+import { enrollmentsApi, certificatesApi } from '@/lib/api'
 import ContentLoader from '@/components/ui/content-loader'
+import { showToast } from '@/lib/toast'
+import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
+import { BookOpen, Award, TrendingUp, CheckCircle } from 'lucide-react'
+
+interface EnrolledCourse {
+  id: string
+  course_id: string
+  course: {
+    id: string
+    title: string
+    description?: string
+    thumbnail_url?: string
+  }
+  progress_percentage: number
+  status: string
+  enrolled_at: string
+  last_accessed_at?: string
+}
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
@@ -17,6 +35,7 @@ export default function DashboardPage() {
     inProgressCourses: 0,
     certificates: 0
   })
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([])
   const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
@@ -28,23 +47,61 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchDashboardData() {
       if (!user) return
-      
+
       try {
         setDataLoading(true)
-        // Fetch real data from APIs
-        const [progressData, certificatesData] = await Promise.all([
-          progressApi.getOverallProgress(),
-          certificatesApi.getMyCertificates()
-        ])
+        const { enrollmentsApi, certificatesApi, coursesApi } = await import('@/lib/api')
+
+        // Fetch enrollments
+        const enrollments = await enrollmentsApi.getMyEnrollments()
+
+        // Enrich enrollments with course data
+        const enrichedEnrollments = await Promise.all(
+          enrollments.map(async (enrollment: any) => {
+            try {
+              const course = await coursesApi.getById(enrollment.course_id)
+              return {
+                ...enrollment,
+                course
+              }
+            } catch (error) {
+              console.error(`Failed to fetch course ${enrollment.course_id}:`, error)
+              return {
+                ...enrollment,
+                course: {
+                  id: enrollment.course_id,
+                  title: 'Unknown Course',
+                  description: ''
+                }
+              }
+            }
+          })
+        )
+
+        setEnrolledCourses(enrichedEnrollments)
+
+        // Calculate stats
+        const completedCount = enrichedEnrollments.filter((e: any) => e.status === 'completed').length
+        const inProgressCount = enrichedEnrollments.filter((e: any) => e.status === 'in_progress').length
+
+        // Fetch certificates
+        let certificatesCount = 0
+        try {
+          const certificates = await certificatesApi.getMyCertificates()
+          certificatesCount = certificates.length || 0
+        } catch (error) {
+          console.error('Failed to fetch certificates:', error)
+        }
 
         setStats({
-          enrolledCourses: progressData.total_courses_enrolled || 0,
-          completedCourses: progressData.courses_completed || 0,
-          inProgressCourses: progressData.courses_in_progress || 0,
-          certificates: certificatesData.certificates?.length || 0
+          enrolledCourses: enrichedEnrollments.length,
+          completedCourses: completedCount,
+          inProgressCourses: inProgressCount,
+          certificates: certificatesCount
         })
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error)
+        showToast.error('Failed to load dashboard data')
       } finally {
         setDataLoading(false)
       }
@@ -69,7 +126,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <ModernDashboardLayout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white mb-8">
           <h2 className="text-3xl font-bold mb-2">
@@ -89,9 +147,7 @@ export default function DashboardPage() {
                 <p className="text-3xl font-bold text-gray-900">{stats.enrolledCourses}</p>
               </div>
               <div className="bg-blue-100 rounded-full p-3">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
+                <BookOpen className="w-8 h-8 text-blue-600" />
               </div>
             </div>
           </div>
@@ -103,9 +159,7 @@ export default function DashboardPage() {
                 <p className="text-3xl font-bold text-gray-900">{stats.inProgressCourses}</p>
               </div>
               <div className="bg-yellow-100 rounded-full p-3">
-                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+                <TrendingUp className="w-8 h-8 text-yellow-600" />
               </div>
             </div>
           </div>
@@ -117,9 +171,7 @@ export default function DashboardPage() {
                 <p className="text-3xl font-bold text-gray-900">{stats.completedCourses}</p>
               </div>
               <div className="bg-green-100 rounded-full p-3">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
             </div>
           </div>
@@ -131,16 +183,87 @@ export default function DashboardPage() {
                 <p className="text-3xl font-bold text-gray-900">{stats.certificates}</p>
               </div>
               <div className="bg-purple-100 rounded-full p-3">
-                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                </svg>
+                <Award className="w-8 h-8 text-purple-600" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* My Enrolled Courses */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900">My Courses</h3>
+            <Link href="/courses">
+              <Button variant="outline" size="sm">
+                Browse More Courses
+              </Button>
+            </Link>
+          </div>
+
+          {dataLoading ? (
+            <ContentLoader />
+          ) : enrolledCourses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {enrolledCourses.map((enrollment) => (
+                <div key={enrollment.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="h-40 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <BookOpen className="w-16 h-16 text-white" />
+                  </div>
+                  <div className="p-4">
+                    <h4 className="font-bold text-gray-900 mb-2 line-clamp-2">{enrollment.course.title}</h4>
+
+                    {/* Progress Bar */}
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="text-gray-600">Progress</span>
+                        <span className="font-semibold text-blue-600">{Math.round(enrollment.progress_percentage || 0)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all ${
+                            (enrollment.progress_percentage || 0) === 100 ? 'bg-green-600' : 'bg-blue-600'
+                          }`}
+                          style={{ width: `${enrollment.progress_percentage || 0}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        enrollment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        enrollment.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {enrollment.status === 'completed' ? '✓ Completed' :
+                         enrollment.status === 'in_progress' ? 'In Progress' :
+                         'Enrolled'}
+                      </span>
+                    </div>
+
+                    <Link href={`/courses/${enrollment.course_id}/learn`}>
+                      <Button className="w-full" size="sm">
+                        {enrollment.status === 'completed' ? 'Review Course' : 'Continue Learning'}
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <BookOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+              <h4 className="text-lg font-medium text-gray-900 mb-2">No Enrolled Courses</h4>
+              <p className="text-gray-600 mb-4">Start learning by browsing our course catalog</p>
+              <Link href="/courses">
+                <Button>Browse Courses</Button>
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link href="/courses">
@@ -160,12 +283,7 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h3>
-          <p className="text-gray-600">No recent activity to display.</p>
-        </div>
       </div>
+    </ModernDashboardLayout>
   )
 }

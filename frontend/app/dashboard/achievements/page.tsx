@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import ContentLoader from '@/components/ui/content-loader'
 import { Trophy, Star, Target, Zap, Award, TrendingUp } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 interface Badge {
   id: string
@@ -41,6 +42,7 @@ export default function AchievementsPage() {
       setStreak(streakData.current_streak || 0)
     } catch (error) {
       console.error('Failed to fetch achievements:', error)
+      showToast.error('Failed to load achievements')
     } finally {
       setLoading(false)
     }

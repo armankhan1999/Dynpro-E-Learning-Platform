@@ -19,8 +19,8 @@ router = APIRouter()
 
 
 def generate_certificate_number() -> str:
-    """Generate a unique certificate number."""
-    return f"CERT-{datetime.utcnow().strftime('%Y%m%d')}-{secrets.token_hex(4).upper()}"
+    """Generate a unique certificate number with DynPro branding."""
+    return f"DYN-{datetime.utcnow().strftime('%Y%m%d')}-{secrets.token_hex(4).upper()}"
 
 
 def generate_verification_code() -> str:
@@ -72,11 +72,11 @@ def generate_certificate(
     certificate = Certificate(
         user_id=enrollment.user_id,
         course_id=enrollment.course_id,
-        enrollment_id=enrollment.enrollment_id,
+        enrollment_id=enrollment.id,
         certificate_number=generate_certificate_number(),
         verification_code=generate_verification_code(),
         title=f"Certificate of Completion - {course.title}",
-        description=f"This certifies that the holder has successfully completed {course.title}"
+        description=f"This certifies that the holder has successfully completed {course.title} offered by DynPro."
     )
     
     db.add(certificate)
@@ -131,7 +131,7 @@ def bulk_generate_certificates(
             certificate_number=generate_certificate_number(),
             verification_code=generate_verification_code(),
             title=f"Certificate of Completion - {course.title}",
-            description=f"This certifies that the holder has successfully completed {course.title}"
+            description=f"This certifies that the holder has successfully completed {course.title} offered by DynPro."
         )
         db.add(certificate)
         enrollment.certificate_issued = True

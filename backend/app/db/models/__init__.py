@@ -8,6 +8,7 @@ from app.db.models.certificate import Certificate
 from app.db.models.notification import Notification
 from app.db.models.learning_path import LearningPath, LearningPathCourse, LearningPathEnrollment, UserLearningPath
 from app.db.models.department import Department
+from app.db.models.note import Note
 
 __all__ = [
     "User",
@@ -37,4 +38,5 @@ __all__ = [
     "LearningPathEnrollment",
     "UserLearningPath",
     "Department",
+    "Note",
 ]

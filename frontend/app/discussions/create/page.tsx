@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { MessageSquare, Save, X } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 export default function CreateDiscussionPage() {
   const router = useRouter()
@@ -13,15 +14,21 @@ export default function CreateDiscussionPage() {
     content: '',
     course: ''
   })
+  const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    setSubmitting(true)
     try {
       const { discussionsApi } = await import('@/lib/api')
       await discussionsApi.create(formData)
+      showToast.success('Discussion created successfully')
       router.push('/discussions')
     } catch (error) {
       console.error('Failed to create discussion:', error)
+      showToast.error('Failed to create discussion')
+      setSubmitting(false)
     }
   }
 
@@ -75,11 +82,11 @@ export default function CreateDiscussionPage() {
             </div>
 
             <div className="flex gap-4">
-              <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
+              <Button type="submit" disabled={submitting} className="flex-1 bg-blue-600 hover:bg-blue-700">
                 <Save className="mr-2 h-4 w-4" />
-                Post Discussion
+                {submitting ? 'Posting...' : 'Post Discussion'}
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.back()}>
+              <Button type="button" variant="outline" disabled={submitting} onClick={() => router.back()}>
                 <X className="mr-2 h-4 w-4" />
                 Cancel
               </Button>

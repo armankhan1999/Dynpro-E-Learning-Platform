@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { FileText, Plus, Edit, Trash2 } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 export default function InstructorContentPage() {
   const [content, setContent] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchContent()
@@ -19,6 +21,9 @@ export default function InstructorContentPage() {
       setContent(data.content || [])
     } catch (error) {
       console.error('Failed to fetch content:', error)
+      showToast.error('Failed to load content')
+    } finally {
+      setLoading(false)
     }
   }
 

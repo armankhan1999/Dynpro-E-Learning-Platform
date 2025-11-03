@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { MessageSquare, Plus, Search, TrendingUp, Clock, MessageCircle, Eye } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 
 interface Discussion {
   id: string
@@ -38,6 +39,7 @@ export default function DiscussionsPage() {
       setDiscussions(data.discussions || [])
     } catch (error) {
       console.error('Failed to fetch discussions:', error)
+      showToast.error('Failed to load discussions')
     } finally {
       setLoading(false)
     }
