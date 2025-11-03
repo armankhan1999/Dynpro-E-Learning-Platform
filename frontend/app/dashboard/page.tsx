@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { enrollmentsApi, certificatesApi } from '@/lib/api'
 import ContentLoader from '@/components/ui/content-loader'
 import { showToast } from '@/lib/toast'
-import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { BookOpen, Award, TrendingUp, CheckCircle } from 'lucide-react'
 
 interface EnrolledCourse {
@@ -126,8 +125,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <ModernDashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white mb-8">
           <h2 className="text-3xl font-bold mb-2">
@@ -283,7 +281,6 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
-      </div>
-    </ModernDashboardLayout>
+    </div>
   )
 }

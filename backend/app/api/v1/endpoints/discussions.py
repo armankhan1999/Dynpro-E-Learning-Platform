@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, and_, func, or_
 from typing import List, Optional
 from uuid import UUID
@@ -44,8 +44,8 @@ def get_discussions(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get all discussions with optional filters."""
-    query = select(Discussion)
-    
+    query = select(Discussion).options(joinedload(Discussion.user))
+
     if course_id:
         query = query.where(Discussion.course_id == course_id)
     if category:
@@ -57,13 +57,13 @@ def get_discussions(
                 Discussion.content.ilike(f"%{search}%")
             )
         )
-    
+
     # Order by pinned first, then by creation date
     query = query.order_by(
         Discussion.is_pinned.desc(),
         Discussion.created_at.desc()
     ).offset(skip).limit(limit)
-    
+
     result = db.execute(query)
     discussions = result.scalars().all()
     return discussions
@@ -91,7 +91,9 @@ def get_my_discussions(
 ):
     """Get all discussions created by current user."""
     result = db.execute(
-        select(Discussion).where(Discussion.user_id == current_user.id)
+        select(Discussion)
+        .options(joinedload(Discussion.user))
+        .where(Discussion.user_id == current_user.id)
         .order_by(Discussion.created_at.desc())
     )
     discussions = result.scalars().all()
@@ -107,9 +109,10 @@ def get_trending_discussions(
 ):
     """Get trending discussions based on recent activity."""
     since_date = datetime.utcnow() - timedelta(days=days)
-    
+
     result = db.execute(
         select(Discussion)
+        .options(joinedload(Discussion.user))
         .where(Discussion.created_at >= since_date)
         .order_by(
             (Discussion.upvotes_count + Discussion.replies_count).desc()
@@ -152,26 +155,31 @@ def get_discussion(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get discussion with replies."""
-    result = db.execute(select(Discussion).where(Discussion.id == discussion_id))
+    result = db.execute(
+        select(Discussion)
+        .options(joinedload(Discussion.user))
+        .where(Discussion.id == discussion_id)
+    )
     discussion = result.scalar_one_or_none()
-    
+
     if not discussion:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Discussion not found"
         )
-    
-    # Get replies
+
+    # Get replies with user information
     replies_result = db.execute(
         select(DiscussionReply)
+        .options(joinedload(DiscussionReply.user))
         .where(DiscussionReply.discussion_id == discussion_id)
         .order_by(DiscussionReply.is_solution.desc(), DiscussionReply.created_at.asc())
     )
     replies = replies_result.scalars().all()
-    
+
     discussion_dict = DiscussionResponse.from_orm(discussion).dict()
     discussion_dict['replies'] = [ReplyResponse.from_orm(r) for r in replies]
-    
+
     return discussion_dict
 
 

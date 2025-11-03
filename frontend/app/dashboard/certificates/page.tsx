@@ -5,9 +5,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
 import ContentLoader from '@/components/ui/content-loader'
-import { Award, Download, Share2, ExternalLink, Calendar, CheckCircle } from 'lucide-react'
+import { Award, Share2, ExternalLink, Calendar, CheckCircle } from 'lucide-react'
 import { showToast } from '@/lib/toast'
-import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 
 interface Certificate {
   id: string
@@ -45,24 +44,6 @@ export default function CertificatesPage() {
     }
   }
 
-  const handleDownload = async (cert: Certificate) => {
-    try {
-      if (cert.certificate_url) {
-        // Download the certificate
-        const link = document.createElement('a')
-        link.href = cert.certificate_url
-        link.download = `certificate-${cert.certificate_number}.pdf`
-        link.click()
-        showToast.success('Certificate downloaded')
-      } else {
-        showToast.warning('Certificate URL not available')
-      }
-    } catch (error) {
-      console.error('Failed to download certificate:', error)
-      showToast.error('Failed to download certificate')
-    }
-  }
-
   const handleShare = async (cert: Certificate) => {
     try {
       const shareUrl = `${window.location.origin}/verify-certificate/${cert.verification_code}`
@@ -87,17 +68,14 @@ export default function CertificatesPage() {
 
   if (loading) {
     return (
-      <ModernDashboardLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <ContentLoader />
-        </div>
-      </ModernDashboardLayout>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <ContentLoader />
+      </div>
     )
   }
 
   return (
-    <ModernDashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
@@ -198,26 +176,18 @@ export default function CertificatesPage() {
 
                   {/* Actions */}
                   <div className="flex gap-2">
-                    <Button
-                      onClick={() => handleDownload(cert)}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
+                    <Link href={`/certificate/${cert.id}`} className="flex-1">
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        View Certificate
+                      </Button>
+                    </Link>
                     <Button
                       onClick={() => handleShare(cert)}
                       variant="outline"
-                      className="flex-1"
-                    >
-                      <Share2 className="mr-2 h-4 w-4" />
-                      Share
-                    </Button>
-                    <Button
-                      variant="outline"
                       className="px-3"
                     >
-                      <ExternalLink className="h-4 w-4" />
+                      <Share2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -238,7 +208,6 @@ export default function CertificatesPage() {
             </Link>
           </div>
         )}
-      </div>
-    </ModernDashboardLayout>
+    </div>
   )
 }

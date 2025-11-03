@@ -277,13 +277,52 @@ def download_certificate(
     }
 
 
+@router.get("/verify/{verification_code}")
+def verify_certificate_by_code(
+    verification_code: str,
+    db: Session = Depends(get_db)
+):
+    """Verify a certificate by verification code (public endpoint)."""
+    result = db.execute(
+        select(Certificate).where(Certificate.verification_code == verification_code)
+    )
+    certificate = result.scalar_one_or_none()
+
+    if not certificate:
+        return {
+            "valid": False,
+            "message": "Certificate not found or verification code is invalid"
+        }
+
+    if certificate.is_revoked:
+        return {
+            "valid": False,
+            "message": "This certificate has been revoked"
+        }
+
+    # Get user and course details
+    user_result = db.execute(select(User).where(User.id == certificate.user_id))
+    user = user_result.scalar_one()
+
+    course_result = db.execute(select(Course).where(Course.id == certificate.course_id))
+    course = course_result.scalar_one()
+
+    return {
+        "valid": True,
+        "certificate_number": certificate.certificate_number,
+        "issued_to": f"{user.first_name} {user.last_name}" if user.first_name else user.username,
+        "course_title": course.title,
+        "issued_at": certificate.issued_at.isoformat(),
+        "expires_at": certificate.expires_at.isoformat() if certificate.expires_at else None
+    }
+
 @router.get("/{certificate_id}/verify")
 def verify_certificate(
     certificate_id: UUID,
     verification_code: str,
     db: Session = Depends(get_db)
 ):
-    """Verify a certificate (public endpoint)."""
+    """Verify a certificate (public endpoint) - Legacy endpoint."""
     result = db.execute(
         select(Certificate).where(
             and_(
@@ -293,26 +332,26 @@ def verify_certificate(
         )
     )
     certificate = result.scalar_one_or_none()
-    
+
     if not certificate:
         return {
             "valid": False,
             "message": "Certificate not found or verification code is invalid"
         }
-    
+
     if certificate.is_revoked:
         return {
             "valid": False,
             "message": "This certificate has been revoked"
         }
-    
+
     # Get user and course details
     user_result = db.execute(select(User).where(User.id == certificate.user_id))
     user = user_result.scalar_one()
-    
+
     course_result = db.execute(select(Course).where(Course.id == certificate.course_id))
     course = course_result.scalar_one()
-    
+
     return {
         "valid": True,
         "certificate_number": certificate.certificate_number,

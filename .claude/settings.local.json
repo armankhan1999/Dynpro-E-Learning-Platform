@@ -10,7 +10,9 @@
       "Bash(findstr:*)",
       "Bash(if not exist \"C:\\Users\\Arman\\Desktop\\Dynpro Elearning\\frontend\\app\\courses\\[id]\\edit\" mkdir \"C:\\Users\\Arman\\Desktop\\Dynpro Elearning\\frontend\\app\\courses\\[id]\\edit\")",
       "Bash(\"C:\\Users\\Arman\\Desktop\\Dynpro Elearning\\frontend\\app\\courses\\[id]\\edit\\page.tsx\")",
-      "Bash(dir /s /b \"C:\\Users\\Arman\\Desktop\\Dynpro Elearning\\frontend\\app\\courses\")"
+      "Bash(dir /s /b \"C:\\Users\\Arman\\Desktop\\Dynpro Elearning\\frontend\\app\\courses\")",
+      "Bash(npm install:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

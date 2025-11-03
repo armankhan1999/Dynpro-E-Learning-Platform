@@ -20,10 +20,22 @@ class DiscussionUpdate(BaseModel):
     category: Optional[str] = None
 
 
+class UserInfo(BaseModel):
+    """Basic user information for discussions."""
+    id: UUID
+    username: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class DiscussionResponse(DiscussionBase):
     id: UUID
     course_id: Optional[UUID] = None
     user_id: UUID
+    user: Optional[UserInfo] = None  # User information
     is_pinned: bool
     is_locked: bool
     is_resolved: bool
@@ -31,7 +43,7 @@ class DiscussionResponse(DiscussionBase):
     replies_count: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -52,12 +64,13 @@ class ReplyResponse(ReplyBase):
     id: UUID
     discussion_id: UUID
     user_id: UUID
+    user: Optional[UserInfo] = None  # User information
     parent_reply_id: Optional[UUID] = None
     is_solution: bool
     upvotes_count: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 

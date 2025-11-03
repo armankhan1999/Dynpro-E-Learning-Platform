@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: false, // Disabled to prevent duplicate toasts in development
   images: {
     domains: ['localhost', 'via.placeholder.com'],
     remotePatterns: [

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
 import ContentLoader from '@/components/ui/content-loader'
 import { showToast } from '@/lib/toast'
-import ModernDashboardLayout from '@/components/layout/modern-dashboard-layout'
 import { BookOpen, TrendingUp, CheckCircle } from 'lucide-react'
 
 interface EnrollmentWithCourse {
@@ -80,17 +79,14 @@ export default function MyLearningPage() {
 
   if (loading) {
     return (
-      <ModernDashboardLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <ContentLoader />
-        </div>
-      </ModernDashboardLayout>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <ContentLoader />
+      </div>
     )
   }
 
   return (
-    <ModernDashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">My Learning</h1>
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -245,7 +241,6 @@ export default function MyLearningPage() {
             </div>
           )}
         </div>
-      </div>
-    </ModernDashboardLayout>
+    </div>
   )
 }
